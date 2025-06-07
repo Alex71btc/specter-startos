@@ -6,6 +6,9 @@ const shape = object({
 })
 
 export const configJson = FileHelper.json(
-  '/media/startos/volumes/main/.specter/config.json',
+  {
+    volumeId: 'main',
+    subpath: '/.specter/config.json',
+  },
   shape,
 )

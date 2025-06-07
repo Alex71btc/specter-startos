@@ -26,6 +26,9 @@ const shape = object({
 }).onMismatch(spectrumNodeDefaultConfig)
 
 export const spectrumNodeJson = FileHelper.json(
-  '/media/startos/volumes/main/.specter/nodes/spectrum_config.json',
+  {
+    volumeId: 'main',
+    subpath: '/.specter/nodes/spectrum_config.json',
+  },
   shape,
 )
