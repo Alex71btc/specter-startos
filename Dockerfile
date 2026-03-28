@@ -9,8 +9,7 @@ FROM ghcr.io/cryptoadvance/specter-desktop:v2.1.5
 
 USER root
 
-COPY --from=builder /usr/local/bin/yq /usr/local/bin/yq
-RUN apt update && apt install -y jq
+RUN apt update && apt install -y jq yq yq
 
 ADD ./docker_entrypoint.sh /usr/local/bin/docker_entrypoint.sh
 RUN chmod a+x /usr/local/bin/docker_entrypoint.sh
