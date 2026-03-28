@@ -63,5 +63,5 @@ else
 endif
 
 scripts/embassy.js: $(TS_FILES)
-	deno bundle scripts/embassy.ts scripts/embassy.js
+	deno bundle -o scripts/embassy.js scripts/embassy.ts
 
