@@ -7,3 +7,6 @@ tofix.txt
 .DS_Store
 docker-images
 .vscode
+
+node_modules/
+javascript/
