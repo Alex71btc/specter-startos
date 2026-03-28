@@ -1,6 +1,6 @@
 id: specter 
 title: Specter
-version: 2.1.5.4
+version: 2.1.5.5
 release-notes: |
   * Updated Specter Desktop to v2.1.5
   * Switched container source to the official cryptoadvance GHCR image

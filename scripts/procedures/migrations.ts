@@ -5,7 +5,7 @@ const { shape, string } = matches
 export const migration: T.ExpectedExports.migration = compat.migrations
   .fromMapping(
     {
-    "2.1.5.4": {
+    "2.1.5.5": {
       up: compat.migrations.updateConfig((config) => {
         if (Object.keys(config).length === 0) {
           // service was never configured
@@ -23,8 +23,8 @@ export const migration: T.ExpectedExports.migration = compat.migrations
           config.bitcoind.type = 'internal'
         }
         return config
-      }, true, { version: "2.1.5.4", type: "up" }),
+      }, true, { version: "2.1.5.5", type: "up" }),
       down: compat.migrations.updateConfig(_ => { throw new Error("Downgrade unavailable") }, true, { version: "2.0.2.2", type: "down" })
     }
   }
-  , "2.1.5.4" );
+  , "2.1.5.5" );
