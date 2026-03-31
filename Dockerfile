@@ -7,7 +7,7 @@ RUN apt update && apt install -y \
 
 WORKDIR /opt
 
-RUN git clone --branch v2.1.5 --depth 1 https://github.com/cryptoadvance/specter-desktop.git
+RUN git clone --branch v2.1.6 --depth 1 https://github.com/cryptoadvance/specter-desktop.git
 
 WORKDIR /opt/specter-desktop
 
