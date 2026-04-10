@@ -7,6 +7,11 @@ const shape = z.object({
     z.literal('spectrum_node'),
     z.null(),
   ]).catch(null),
+  spectrum_backend: z.union([
+    z.literal('electrs'),
+    z.literal('fulcrum'),
+    z.null(),
+  ]).catch(null),
   bitcoind: z.boolean().catch(false),
 })
 

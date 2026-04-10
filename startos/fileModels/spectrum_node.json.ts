@@ -6,9 +6,9 @@ const shape = z.object({
   fullpath: z.literal('/root/.specter/nodes/spectrum_node.json'),
   name: z.literal('Spectrum Node'),
   alias: z.literal('spectrum_node'),
-  host: z.literal('electrs.startos').catch('electrs.startos'),
-  port: z.literal(50001),
-  ssl: z.literal(false),
+  host: z.string().catch('electrs.startos'),
+  port: z.number().catch(50001),
+  ssl: z.boolean().catch(false),
 })
 
 export const spectrumNodeJson = FileHelper.json(

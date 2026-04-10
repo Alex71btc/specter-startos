@@ -30,5 +30,15 @@ dependencies: {
     description: 'Optional Bitcoin Core / Knots backend for Specter.',
     s9pk: null,
   },
+  electrs: {
+    optional: true,
+    description: 'Optional electrs backend for Specter via Spectrum Node.',
+    s9pk: null,
+  },
+  fulcrum: {
+    optional: true,
+    description: 'Optional Fulcrum backend for Specter via Spectrum Node.',
+    s9pk: null,
+  },
 }
 })

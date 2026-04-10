@@ -8,6 +8,7 @@ import { spectrumNodeJson } from '../fileModels/spectrum_node.json'
 const { InputSpec, Value } = sdk
 
 type ActiveNodeAlias = 'bitcoin_core' | 'spectrum_node'
+type SpectrumBackend = 'electrs' | 'fulcrum'
 
 const DEFAULT_BITCOIN_NODE = {
   python_class: 'cryptoadvance.specter.node.Node' as const,
@@ -22,14 +23,17 @@ const DEFAULT_BITCOIN_NODE = {
   node_type: 'BTC' as const,
 }
 
-const DEFAULT_SPECTRUM_NODE = {
-  python_class: 'cryptoadvance.specterext.spectrum.spectrum_node.SpectrumNode' as const,
-  fullpath: '/root/.specter/nodes/spectrum_node.json' as const,
-  name: 'Spectrum Node' as const,
-  alias: 'spectrum_node' as const,
-  host: 'electrs.startos' as const,
-  port: 50001 as const,
-  ssl: false as const,
+function getSpectrumDefaults(backend: SpectrumBackend) {
+  return {
+    python_class:
+      'cryptoadvance.specterext.spectrum.spectrum_node.SpectrumNode' as const,
+    fullpath: '/root/.specter/nodes/spectrum_node.json' as const,
+    name: 'Spectrum Node' as const,
+    alias: 'spectrum_node' as const,
+    host: backend === 'fulcrum' ? 'fulcrum.startos' : 'electrs.startos',
+    port: 50001,
+    ssl: false,
+  }
 }
 
 export const inputSpec = InputSpec.of({
@@ -39,6 +43,14 @@ export const inputSpec = InputSpec.of({
     values: {
       bitcoin_core: 'Bitcoin Core / Knots',
       spectrum_node: 'Spectrum Node',
+    },
+  }),
+  spectrum_backend: Value.select({
+    name: 'Spectrum backend',
+    default: 'electrs',
+    values: {
+      electrs: 'electrs',
+      fulcrum: 'fulcrum',
     },
   }),
 })
@@ -73,21 +85,26 @@ function hasUsableBitcoinCredentials(
   return !!node?.user && !!node?.password
 }
 
-async function ensureConfig(effects: any, active_node_alias: ActiveNodeAlias) {
+async function ensureConfig(
+  effects: any,
+  active_node_alias: ActiveNodeAlias,
+  spectrum_backend: SpectrumBackend | null,
+) {
   const existing = await safeReadConfig(effects)
 
+  const payload = {
+    active_node_alias,
+    spectrum_backend:
+      active_node_alias === 'spectrum_node' ? spectrum_backend : null,
+    bitcoind: active_node_alias === 'bitcoin_core',
+  }
+
   if (!existing) {
-    await configJson.write(effects, {
-      active_node_alias,
-      bitcoind: active_node_alias === 'bitcoin_core',
-    })
+    await configJson.write(effects, payload)
     return
   }
 
-  await configJson.merge(effects, {
-    active_node_alias,
-    bitcoind: active_node_alias === 'bitcoin_core',
-  })
+  await configJson.merge(effects, payload)
 }
 
 async function ensureBitcoinNodeFile(
@@ -122,23 +139,19 @@ async function ensureBitcoinNodeFile(
   })
 }
 
-async function ensureSpectrumNodeFile(effects: any) {
+async function ensureSpectrumNodeFile(
+  effects: any,
+  backend: SpectrumBackend,
+) {
   const existing = await safeReadSpectrumNode(effects)
+  const defaults = getSpectrumDefaults(backend)
 
   if (!existing) {
-    await spectrumNodeJson.write(effects, DEFAULT_SPECTRUM_NODE)
+    await spectrumNodeJson.write(effects, defaults)
     return
   }
 
-  await spectrumNodeJson.merge(effects, {
-    python_class: DEFAULT_SPECTRUM_NODE.python_class,
-    fullpath: DEFAULT_SPECTRUM_NODE.fullpath,
-    name: DEFAULT_SPECTRUM_NODE.name,
-    alias: DEFAULT_SPECTRUM_NODE.alias,
-    host: DEFAULT_SPECTRUM_NODE.host,
-    port: DEFAULT_SPECTRUM_NODE.port,
-    ssl: DEFAULT_SPECTRUM_NODE.ssl,
-  })
+  await spectrumNodeJson.merge(effects, defaults)
 }
 
 export const selectNode = sdk.Action.withInput(
@@ -157,19 +170,27 @@ export const selectNode = sdk.Action.withInput(
     return {
       active_node_alias:
         (existing?.active_node_alias as ActiveNodeAlias | null) ?? 'bitcoin_core',
+      spectrum_backend:
+        (existing?.spectrum_backend as SpectrumBackend | null) ?? 'electrs',
     }
   },
   async ({ effects, input }) => {
     const activeNode = input.active_node_alias as ActiveNodeAlias
+    const spectrumBackend = (input.spectrum_backend ||
+      'electrs') as SpectrumBackend
 
-    await ensureConfig(effects, activeNode)
+    await ensureConfig(
+      effects,
+      activeNode,
+      activeNode === 'spectrum_node' ? spectrumBackend : null,
+    )
 
     if (activeNode === 'spectrum_node') {
-      await ensureSpectrumNodeFile(effects)
+      await ensureSpectrumNodeFile(effects, spectrumBackend)
       return {
         version: '1',
         title: 'Success',
-        message: 'Spectrum Node selected and configured.',
+        message: `Spectrum Node selected and configured with ${spectrumBackend}.`,
         result: null,
       }
     }
