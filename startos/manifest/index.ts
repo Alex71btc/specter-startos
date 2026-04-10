@@ -19,10 +19,16 @@ export const manifest = setupManifest({
   images: {
     specter: {
       source: {
-        dockerTag: 'lncm/specter-desktop:v2.1.7'
+        dockerTag: 'alex71btc/specter-desktop:v2.1.7'
       },
-      arch: ['x86_64', 'aarch64']
+      arch: ['x86_64']
     }
   },
-  dependencies: {}
+dependencies: {
+  bitcoind: {
+    optional: true,
+    description: 'Optional Bitcoin Core / Knots backend for Specter.',
+    s9pk: null,
+  },
+}
 })
