@@ -11,14 +11,15 @@ export const manifest = setupManifest({
   donationUrl: null,
   description: {
     short:
-      'A user-friendly web GUI for Bitcoin Core with a focus on multisignature setup using hardware wallets and airgapped devices.',
-    long: 'Bitcoin Core has a very powerful command line interface and a wonderful daemon. Using PSBT and HWI it also works great with hardware wallets, but at the moment this is beyond most users. The same applies to multisignature setups. The goal of this project is to make a convenient and user-friendly GUI around Bitcoin Core with a focus on multisignature setup with hardware wallets and airgapped devices.',
+      'A user-friendly web interface for Bitcoin wallets, multisig, and hardware wallet workflows.',
+    long:
+      'Specter Desktop is a Bitcoin wallet interface focused on sovereignty, multisignature setups, and hardware wallet support. This package provides Specter as a StartOS service with a web UI and persistent data storage.',
   },
   volumes: ['main'],
   images: {
     specter: {
       source: {
-        dockerTag: 'lncm/specter-desktop:v2.1.1',
+        dockerTag: 'lncm/specter-desktop:v2.1.7',
       },
     },
   },
@@ -31,18 +32,5 @@ export const manifest = setupManifest({
     start: null,
     stop: null,
   },
-  dependencies: {
-    bitcoind: {
-      optional: true,
-      description:
-        'Needed if you want to connect Specter to your StartOS Bitcoin node.',
-      s9pk: 'https://github.com/Start9Labs/bitcoind-startos/releases/download/v28.1.0.0-alpha.2/bitcoind.s9pk',
-    },
-    electrs: {
-      optional: true,
-      description:
-        'Needed if you want to connect Specter to your StartOS electrs server',
-      s9pk: 'https://github.com/Start9Labs/bitcoind-startos/releases/download/v28.1.0.0-alpha.2/bitcoind.s9pk',
-    },
-  },
+  dependencies: {},
 })

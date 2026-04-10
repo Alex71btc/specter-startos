@@ -1,54 +1,22 @@
-import { matches, FileHelper } from '@start9labs/start-sdk'
+import { FileHelper, z } from '@start9labs/start-sdk'
+import { sdk } from '../sdk'
 
-const { object, literal, string } = matches
-
-export const bitcoinCoreDefaultConfig = {
-  python_class: 'cryptoadvance.specter.node.Node',
-  fullpath: '/root/.specter/nodes/bitcoin_core.json',
-  name: 'Bitcoin Core',
-  alias: 'bitcoin_core',
-  autodetect: false,
-  datadir: '',
-  user: '',
-  password: '',
-  port: '8332',
-  host: 'bitcoind.startos',
-  protocol: 'http',
-  node_type: 'BTC',
-} as const
-
-const {
-  python_class,
-  fullpath,
-  name,
-  alias,
-  autodetect,
-  datadir,
-  port,
-  host,
-  protocol,
-  node_type,
-} = bitcoinCoreDefaultConfig
-
-const shape = object({
-  python_class: literal(python_class),
-  fullpath: literal(fullpath),
-  name: literal(name),
-  alias: literal(alias),
-  autodetect: literal(autodetect),
-  datadir: literal(datadir),
-  user: string,
-  password: string,
-  port: literal(port),
-  host: literal(host),
-  protocol: literal(protocol),
-  node_type: literal(node_type),
-}).onMismatch(bitcoinCoreDefaultConfig)
+const shape = z.object({
+  python_class: z.literal('cryptoadvance.specter.node.Node'),
+  fullpath: z.literal('/root/.specter/nodes/bitcoin_core.json'),
+  name: z.literal('Bitcoin Core'),
+  alias: z.literal('bitcoin_core'),
+  autodetect: z.literal(false),
+  datadir: z.literal(''),
+  user: z.string(),
+  password: z.string(),
+  port: z.literal('8332'),
+  host: z.literal('bitcoind.startos').catch('bitcoind.startos'),
+  protocol: z.literal('http'),
+  node_type: z.literal('BTC'),
+})
 
 export const bitcoinCoreJson = FileHelper.json(
-  {
-    volumeId: 'main',
-    subpath: '/.specter/nodes/bitcoin_core.json',
-  },
+  { base: sdk.volumes.main, subpath: '.specter/nodes/bitcoin_core.json' },
   shape,
 )
