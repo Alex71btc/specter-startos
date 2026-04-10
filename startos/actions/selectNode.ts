@@ -3,8 +3,34 @@ import { sdk } from '../sdk'
 import { bitcoindGenerateRpcUserDependent } from './bitcoindGenerateRpcUserDependent'
 import { configJson } from '../fileModels/config.json'
 import { bitcoinCoreJson } from '../fileModels/bitcoin_core.json'
+import { spectrumNodeJson } from '../fileModels/spectrum_node.json'
 
 const { InputSpec, Value } = sdk
+
+type ActiveNodeAlias = 'bitcoin_core' | 'spectrum_node'
+
+const DEFAULT_BITCOIN_NODE = {
+  python_class: 'cryptoadvance.specter.node.Node' as const,
+  fullpath: '/root/.specter/nodes/bitcoin_core.json' as const,
+  name: 'Bitcoin Core' as const,
+  alias: 'bitcoin_core' as const,
+  autodetect: false as const,
+  datadir: '' as const,
+  port: '8332' as const,
+  host: 'bitcoind.startos' as const,
+  protocol: 'http' as const,
+  node_type: 'BTC' as const,
+}
+
+const DEFAULT_SPECTRUM_NODE = {
+  python_class: 'cryptoadvance.specterext.spectrum.spectrum_node.SpectrumNode' as const,
+  fullpath: '/root/.specter/nodes/spectrum_node.json' as const,
+  name: 'Spectrum Node' as const,
+  alias: 'spectrum_node' as const,
+  host: 'electrs.startos' as const,
+  port: 50001 as const,
+  ssl: false as const,
+}
 
 export const inputSpec = InputSpec.of({
   active_node_alias: Value.select({
@@ -12,9 +38,108 @@ export const inputSpec = InputSpec.of({
     default: 'bitcoin_core',
     values: {
       bitcoin_core: 'Bitcoin Core / Knots',
+      spectrum_node: 'Spectrum Node',
     },
   }),
 })
+
+async function safeReadConfig(effects: any) {
+  try {
+    return await configJson.read((v) => v).const(effects)
+  } catch {
+    return null
+  }
+}
+
+async function safeReadBitcoinNode(effects: any) {
+  try {
+    return await bitcoinCoreJson.read((v) => v).const(effects)
+  } catch {
+    return null
+  }
+}
+
+async function safeReadSpectrumNode(effects: any) {
+  try {
+    return await spectrumNodeJson.read((v) => v).const(effects)
+  } catch {
+    return null
+  }
+}
+
+function hasUsableBitcoinCredentials(
+  node: Awaited<ReturnType<typeof safeReadBitcoinNode>>,
+): node is NonNullable<Awaited<ReturnType<typeof safeReadBitcoinNode>>> {
+  return !!node?.user && !!node?.password
+}
+
+async function ensureConfig(effects: any, active_node_alias: ActiveNodeAlias) {
+  const existing = await safeReadConfig(effects)
+
+  if (!existing) {
+    await configJson.write(effects, {
+      active_node_alias,
+      bitcoind: active_node_alias === 'bitcoin_core',
+    })
+    return
+  }
+
+  await configJson.merge(effects, {
+    active_node_alias,
+    bitcoind: active_node_alias === 'bitcoin_core',
+  })
+}
+
+async function ensureBitcoinNodeFile(
+  effects: any,
+  username: string,
+  password: string,
+) {
+  const existing = await safeReadBitcoinNode(effects)
+
+  if (!existing) {
+    await bitcoinCoreJson.write(effects, {
+      ...DEFAULT_BITCOIN_NODE,
+      user: username,
+      password,
+    })
+    return
+  }
+
+  await bitcoinCoreJson.merge(effects, {
+    python_class: DEFAULT_BITCOIN_NODE.python_class,
+    fullpath: DEFAULT_BITCOIN_NODE.fullpath,
+    name: DEFAULT_BITCOIN_NODE.name,
+    alias: DEFAULT_BITCOIN_NODE.alias,
+    autodetect: DEFAULT_BITCOIN_NODE.autodetect,
+    datadir: DEFAULT_BITCOIN_NODE.datadir,
+    port: DEFAULT_BITCOIN_NODE.port,
+    host: DEFAULT_BITCOIN_NODE.host,
+    protocol: DEFAULT_BITCOIN_NODE.protocol,
+    node_type: DEFAULT_BITCOIN_NODE.node_type,
+    user: existing.user || username,
+    password: existing.password || password,
+  })
+}
+
+async function ensureSpectrumNodeFile(effects: any) {
+  const existing = await safeReadSpectrumNode(effects)
+
+  if (!existing) {
+    await spectrumNodeJson.write(effects, DEFAULT_SPECTRUM_NODE)
+    return
+  }
+
+  await spectrumNodeJson.merge(effects, {
+    python_class: DEFAULT_SPECTRUM_NODE.python_class,
+    fullpath: DEFAULT_SPECTRUM_NODE.fullpath,
+    name: DEFAULT_SPECTRUM_NODE.name,
+    alias: DEFAULT_SPECTRUM_NODE.alias,
+    host: DEFAULT_SPECTRUM_NODE.host,
+    port: DEFAULT_SPECTRUM_NODE.port,
+    ssl: DEFAULT_SPECTRUM_NODE.ssl,
+  })
+}
 
 export const selectNode = sdk.Action.withInput(
   'select-node',
@@ -27,12 +152,50 @@ export const selectNode = sdk.Action.withInput(
     visibility: 'enabled',
   }),
   inputSpec,
-  async () => ({ active_node_alias: 'bitcoin_core' as const }),
   async ({ effects }) => {
+    const existing = await safeReadConfig(effects)
+    return {
+      active_node_alias:
+        (existing?.active_node_alias as ActiveNodeAlias | null) ?? 'bitcoin_core',
+    }
+  },
+  async ({ effects, input }) => {
+    const activeNode = input.active_node_alias as ActiveNodeAlias
+
+    await ensureConfig(effects, activeNode)
+
+    if (activeNode === 'spectrum_node') {
+      await ensureSpectrumNodeFile(effects)
+      return {
+        version: '1',
+        title: 'Success',
+        message: 'Spectrum Node selected and configured.',
+        result: null,
+      }
+    }
+
+    const existingNode = await safeReadBitcoinNode(effects)
+
+    if (hasUsableBitcoinCredentials(existingNode)) {
+      await ensureBitcoinNodeFile(
+        effects,
+        existingNode.user,
+        existingNode.password,
+      )
+      return {
+        version: '1',
+        title: 'Success',
+        message:
+          'Bitcoin Core / Knots is already configured. Existing RPC credentials were reused.',
+        result: null,
+      }
+    }
+
     const btcUsername = `specter_${utils.getDefaultString({
       charset: 'a-z,A-Z',
       len: 8,
     })}`
+
     const btcPassword = utils.getDefaultString({
       charset: 'a-z,A-Z,1-9,_,-',
       len: 22,
@@ -55,24 +218,14 @@ export const selectNode = sdk.Action.withInput(
       },
     )
 
-    await configJson.merge(effects, {
-      active_node_alias: 'bitcoin_core',
-      bitcoind: true,
-    })
+    await ensureBitcoinNodeFile(effects, btcUsername, btcPassword)
 
-    await bitcoinCoreJson.write(effects, {
-      python_class: 'cryptoadvance.specter.node.Node',
-      fullpath: '/root/.specter/nodes/bitcoin_core.json',
-      name: 'Bitcoin Core',
-      alias: 'bitcoin_core',
-      autodetect: false,
-      datadir: '',
-      user: btcUsername,
-      password: btcPassword,
-      port: '8332',
-      host: 'bitcoind.startos',
-      protocol: 'http',
-      node_type: 'BTC',
-    })
+    return {
+      version: '1',
+      title: 'Success',
+      message:
+        'Bitcoin Core / Knots selected and new RPC credentials were generated for Specter.',
+      result: null,
+    }
   },
 )
