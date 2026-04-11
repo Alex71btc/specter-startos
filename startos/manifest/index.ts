@@ -22,7 +22,7 @@ export const manifest = setupManifest({
       source: {
         dockerTag: 'alex71btc/specter-desktop:v2.1.7'
       },
-      arch: ['x86_64']
+      arch: ['x86_64', 'aarch64']
     }
   },
 dependencies: {
