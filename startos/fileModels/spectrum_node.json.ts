@@ -1,34 +1,17 @@
-import { matches, FileHelper } from '@start9labs/start-sdk'
+import { FileHelper, z } from '@start9labs/start-sdk'
+import { sdk } from '../sdk'
 
-const { object, literal } = matches
-
-export const spectrumNodeDefaultConfig = {
-  python_class: 'cryptoadvance.specterext.spectrum.spectrum_node.SpectrumNode',
-  fullpath: '/root/.specter/nodes/spectrum_node.json',
-  name: 'Spectrum Node',
-  alias: 'spectrum_node',
-  host: 'electrs.startos',
-  port: 50001,
-  ssl: false,
-} as const
-
-const { python_class, fullpath, name, alias, port, host, ssl } =
-  spectrumNodeDefaultConfig
-
-const shape = object({
-  python_class: literal(python_class),
-  fullpath: literal(fullpath),
-  name: literal(name),
-  alias: literal(alias),
-  host: literal(host),
-  port: literal(port),
-  ssl: literal(ssl),
-}).onMismatch(spectrumNodeDefaultConfig)
+const shape = z.object({
+  python_class: z.literal('cryptoadvance.specterext.spectrum.spectrum_node.SpectrumNode'),
+  fullpath: z.literal('/root/.specter/nodes/spectrum_node.json'),
+  name: z.literal('Spectrum Node'),
+  alias: z.literal('spectrum_node'),
+  host: z.string().catch('electrs.startos'),
+  port: z.number().catch(50001),
+  ssl: z.boolean().catch(false),
+})
 
 export const spectrumNodeJson = FileHelper.json(
-  {
-    volumeId: 'main',
-    subpath: '/.specter/nodes/spectrum_config.json',
-  },
+  { base: sdk.volumes.main, subpath: '.specter/nodes/spectrum_node.json' },
   shape,
 )

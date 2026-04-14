@@ -1,14 +1,21 @@
-import { matches, FileHelper } from '@start9labs/start-sdk'
-const { object, anyOf, literal } = matches
+import { FileHelper, z } from '@start9labs/start-sdk'
+import { sdk } from '../sdk'
 
-const shape = object({
-  active_node_alias: anyOf(literal('bitcoin_core'), literal('spectrum_node')),
+const shape = z.object({
+  active_node_alias: z.union([
+    z.literal('bitcoin_core'),
+    z.literal('spectrum_node'),
+    z.null(),
+  ]).catch(null),
+  spectrum_backend: z.union([
+    z.literal('electrs'),
+    z.literal('fulcrum'),
+    z.null(),
+  ]).catch(null),
+  bitcoind: z.boolean().catch(false),
 })
 
 export const configJson = FileHelper.json(
-  {
-    volumeId: 'main',
-    subpath: '/.specter/config.json',
-  },
+  { base: sdk.volumes.main, subpath: '.specter/config.json' },
   shape,
 )
