@@ -1,0 +1,66 @@
+name: Release StartOS 0.4 Package
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*-startos040-*"
+
+permissions:
+  contents: write
+
+jobs:
+  ReleasePackage:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install JS dependencies
+        run: npm install
+
+      - name: Build StartOS JS
+        run: ./node_modules/.bin/ncc build startos/index.ts -o javascript
+
+      - name: Install start-cli
+        run: |
+          curl -L https://github.com/Start9Labs/start-os/releases/download/v0.4.0-beta.7/start-cli_x86_64-linux -o start-cli
+          chmod +x start-cli
+          sudo mv start-cli /usr/local/bin/start-cli
+          start-cli --version
+
+      - name: Initialize developer key
+        run: start-cli init-key
+
+      - name: Install package tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y squashfs-tools-ng
+          which tar2sqfs
+
+      - name: Build package
+        run: make verify
+
+      - name: Inspect package
+        run: start-cli s9pk inspect specter.s9pk manifest | head -120
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          files: specter.s9pk
+          body: |
+            Experimental StartOS 0.4 beta package for Specter.
+
+            Requirements:
+            - StartOS 0.4 beta
+            - Bitcoin Core or Knots backend configured in StartOS
