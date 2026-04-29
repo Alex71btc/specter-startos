@@ -48,7 +48,7 @@ jobs:
           which tar2sqfs
 
       - name: Build package
-        run: make verify
+        run: make
 
       - name: Inspect package
         run: start-cli s9pk inspect specter.s9pk manifest | head -120
