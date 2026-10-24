@@ -14,7 +14,9 @@ export const manifest = setupManifest({
   images: {
     specter: {
       source: {
-        dockerTag: 'ghcr.io/cryptoadvance/specter-desktop:v2.1.11',
+        dockerBuild: {
+          buildArgs: { IMAGE: 'ghcr.io/cryptoadvance/specter-desktop:v2.1.11' },
+        },
       },
       arch: ['x86_64', 'aarch64'],
       emulateMissing: false,
