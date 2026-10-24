@@ -10,8 +10,8 @@ Specter Desktop has one upstream source: the `ghcr.io/cryptoadvance/specter-desk
   gh release view -R cryptoadvance/specter-desktop --json tagName -q .tagName
   ```
 
-  The matching container tag is published to GHCR as `ghcr.io/cryptoadvance/specter-desktop:<tagName>` (the GitHub tags themselves already carry a `v` prefix, e.g. `v2.1.8`). The pin lives in `images.specter.source.dockerTag` in `startos/manifest/index.ts`.
+  The matching container tag is published to GHCR as `ghcr.io/cryptoadvance/specter-desktop:<tagName>` (the GitHub tags themselves already carry a `v` prefix, e.g. `v2.1.8`). The pin lives in `images.specter.source.dockerBuild.buildArgs.IMAGE` in `startos/manifest/index.ts`; the root `Dockerfile` layers a CA-store and certifi refresh on top of it.
 
 ## Applying the bump
 
-- **`startos/manifest/index.ts`** — set `images.specter.source.dockerTag` to `ghcr.io/cryptoadvance/specter-desktop:<tagName>` using the tag from the command above.
+- **`startos/manifest/index.ts`** — set `images.specter.source.dockerBuild.buildArgs.IMAGE` to `ghcr.io/cryptoadvance/specter-desktop:<tagName>` using the tag from the command above.

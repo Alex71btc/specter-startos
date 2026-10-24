@@ -35,13 +35,13 @@
 
 ## Image and Container Runtime
 
-One upstream image, consumed unmodified.
+One upstream image. The root `Dockerfile` upgrades its CA store and certifi, a temporary layer that comes out once upstream ships an image built on fixed stores.
 
-| Property      | Value                                     |
-| ------------- | ----------------------------------------- |
-| Image         | `ghcr.io/cryptoadvance/specter-desktop`   |
-| Architectures | x86_64, aarch64                           |
-| Command       | Specter's server, against the data folder |
+| Property      | Value                                                       |
+| ------------- | ----------------------------------------------------------- |
+| Image         | `ghcr.io/cryptoadvance/specter-desktop` + root `Dockerfile` |
+| Architectures | x86_64, aarch64                                             |
+| Command       | Specter's server, against the data folder                   |
 
 | Subcontainer  | Purpose                                  |
 | ------------- | ---------------------------------------- |
@@ -186,7 +186,7 @@ A restored instance comes back with the same wallets and the same backend select
 
 ```yaml
 package_id: specter
-image: ghcr.io/cryptoadvance/specter-desktop
+image: ghcr.io/cryptoadvance/specter-desktop + root Dockerfile
 architectures:
   - x86_64
   - aarch64
