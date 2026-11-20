@@ -103,7 +103,8 @@ export const selectNode = sdk.Action.withInput(
     if (input.node.selection === 'spectrum_node') {
       const backend = input.node.value.backend as SpectrumBackend
 
-      await configJson.write(effects, {
+      // Merged, not written: config.json also holds auth and Specter's own settings.
+      await configJson.merge(effects, {
         active_node_alias: 'spectrum_node',
         spectrum_backend: backend,
         bitcoind: false,
@@ -121,7 +122,7 @@ export const selectNode = sdk.Action.withInput(
       }
     }
 
-    await configJson.write(effects, {
+    await configJson.merge(effects, {
       active_node_alias: 'bitcoin_core',
       spectrum_backend: null,
       bitcoind: true,

@@ -9,6 +9,10 @@ const shape = z.looseObject({
     .union([z.literal('electrs'), z.literal('fulcrum'), z.null()])
     .catch(null),
   bitcoind: z.boolean().catch(false),
+  auth: z
+    .looseObject({ method: z.string().optional().catch(undefined) })
+    .optional()
+    .catch(undefined),
 })
 
 export const configJson = FileHelper.json(

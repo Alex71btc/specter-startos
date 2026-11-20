@@ -5,6 +5,14 @@
 - [Start9 Bitcoin Guides](https://docs.start9.com/bitcoin-guides/) — connecting a wallet to your own Bitcoin node or Electrum server, and which wallets work on which platforms.
 - [Specter Desktop documentation](https://docs.specter.solutions/) — the upstream user guide for wallets, multisig, devices, and the Specter API.
 
+## Signing In
+
+Specter asks for a password before it shows anything. Run the **Create Admin Password** action to get it — it is shown once, so save it to a password manager — then enter it on Specter's login page. If Specter is set to ask for a username too, use the one the action shows.
+
+Forgot it? Run **Reset Admin Password** for a new one. It restarts Specter, and erases any Swan connection you set up in Specter, which you then reconnect; wallets and devices are kept.
+
+You can change how Specter signs you in under **Settings → Authentication** in Specter.
+
 ## Choosing a Backend
 
 Specter on StartOS supports two backends. Pick one with the **Select Node** action; you can re-run the action any time to switch.

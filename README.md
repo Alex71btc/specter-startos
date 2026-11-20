@@ -57,28 +57,32 @@ One volume.
 | ------ | ----------- | --------------------- |
 | `main` | `/data`     | Specter's data folder |
 
-| Path                                | Written by | Holds                             |
-| ----------------------------------- | ---------- | --------------------------------- |
-| `.specter/config.json`              | The action | Which backend is selected         |
-| `.specter/nodes/bitcoin_core.json`  | Both       | The Bitcoin Core node definition  |
-| `.specter/nodes/spectrum_node.json` | Both       | The Electrum node definition      |
-| `.specter/migration_data.json`      | Init       | Which of Specter's migrations ran |
-| `.specter/` (the rest)              | Specter    | Wallets, devices, and settings    |
+| Path                                | Written by                         | Holds                                             |
+| ----------------------------------- | ---------------------------------- | ------------------------------------------------- |
+| `store.json`                        | Init, the actions                  | Whether the admin password has been handed out    |
+| `.specter/config.json`              | Init, the actions                  | Which backend is selected, and the sign-in method |
+| `.specter/users.json`               | Init, the password action, Specter | The admin account and its password hash           |
+| `.specter/nodes/bitcoin_core.json`  | The node action, `main`            | The Bitcoin Core node definition                  |
+| `.specter/nodes/spectrum_node.json` | The node action, `main`            | The Electrum node definition                      |
+| `.specter/migration_data.json`      | Init                               | Which of Specter's migrations ran                 |
+| `.specter/` (the rest)              | Specter                            | Wallets, devices, and settings                    |
 
 **This volume holds your wallet definitions** — the descriptors and device records that make your funds spendable. Specter is watch-only, so there are no private keys here, but a lost descriptor is a lost wallet even when the seed survives.
 
 ## File Models
 
-Four models, and two of them exist to fight upstream behavior rather than to configure anything.
+Six models, and two of them exist to fight upstream behavior rather than to configure anything.
 
-| File                  | Format | Modelled                | Written by         |
-| --------------------- | ------ | ----------------------- | ------------------ |
-| `config.json`         | JSON   | Yes — `FileHelper.json` | The action         |
-| `bitcoin_core.json`   | JSON   | Yes — `FileHelper.json` | The action, `main` |
-| `spectrum_node.json`  | JSON   | Yes — `FileHelper.json` | The action, `main` |
-| `migration_data.json` | JSON   | Yes — `FileHelper.json` | Init               |
+| File                  | Format | Modelled                | Written by                |
+| --------------------- | ------ | ----------------------- | ------------------------- |
+| `store.json`          | JSON   | Yes — `FileHelper.json` | Init, the password action |
+| `config.json`         | JSON   | Yes — `FileHelper.json` | Init, the actions         |
+| `users.json`          | JSON   | Yes — `FileHelper.json` | Init, the password action |
+| `bitcoin_core.json`   | JSON   | Yes — `FileHelper.json` | The node action, `main`   |
+| `spectrum_node.json`  | JSON   | Yes — `FileHelper.json` | The node action, `main`   |
+| `migration_data.json` | JSON   | Yes — `FileHelper.json` | Init                      |
 
-The first records which backend is active. The two node files are Specter's own node definitions, with their class, path, name and alias **pinned as literals** — they identify the node to Specter, and a changed value is repaired on read.
+`config.json` records which backend is active and Specter's sign-in method (`auth.method`). `users.json` is Specter's account list; the package writes only the admin entry's `password` (Specter's own PBKDF2-SHA256 `{salt, pwdhash}` format) and `encrypted_user_secret`. `store.json` holds `adminPasswordSet`, which decides whether the password task is raised. The two node files are Specter's own node definitions, with their class, path, name and alias **pinned as literals** — they identify the node to Specter, and a changed value is repaired on read.
 
 **The backend's address is resolved at start, not stored.** `main` looks up the selected dependency's binding over the internal bridge and writes the host and port into the matching node file before the daemon reads it. The read is reactive, so a dependency being installed, removed, or moved to a different port updates the file and restarts Specter — but a dependency _update_ does not.
 
@@ -112,11 +116,11 @@ One interface.
 
 Bound on the `main` MultiHost over HTTP and not masked.
 
-**Specter's own authentication gates it**, and it is configured inside the application — Specter can run with no authentication at all, which is its default until you set it. **Set it before exposing this address anywhere**, because the interface shows every wallet's balances and can construct transactions for signing.
+**Specter's own authentication gates it.** Upstream's default is no authentication at all, which signs every visitor in as admin; this package sets Specter's password-only sign-in (`auth.method: passwordonly`) instead, with the admin password generated by the **Create Admin Password** action. Until that action runs the interface shows only a login page that no password opens. The owner can still change the method in Specter's **Settings → Authentication**, and the package leaves that choice alone.
 
 ## Installation and First-Run Flow
 
-Install seeds the migration file and raises a `critical` task: choose a backend.
+Install seeds the migration file and raises a `critical` task: choose a backend. It also switches Specter to password sign-in with the admin password locked to a random value nobody knows — Specter's own first start would otherwise create the admin with the password `admin` — and raises an `important` task to run **Create Admin Password**.
 
 **The service cannot start until one is chosen**, which is right — Specter with no node has nothing to show, and the choice is what determines which dependency is required.
 
@@ -124,11 +128,13 @@ Choosing Bitcoin Core **generates dedicated RPC credentials and asks Bitcoin for
 
 Choosing an Electrum backend writes the node definition and needs no credential.
 
-Once the backend is running and synced, Specter starts, and the rest — wallets, devices, authentication — is set up inside the application.
+Once the backend is running and synced, Specter starts, and the rest — wallets and devices — is set up inside the application.
+
+**On update or restore** the same init check runs once, the first time it finds no `adminPasswordSet`: an install whose `auth.method` is anything other than `none` keeps its method and password untouched; one still on `none` is switched to password sign-in exactly as a fresh install is, and gets the same task.
 
 ## Actions
 
-One action.
+Two actions.
 
 ### Select Node
 
@@ -138,15 +144,26 @@ Chooses the backend: Bitcoin Core, or Spectrum with electrs or Fulcrum behind it
 - **Cost:** the service restarts, and will not start again until the newly selected dependency is running and synced.
 - **Repeat safety:** idempotent, pre-filled with the current selection.
 - **Switching to Bitcoin Core reuses existing RPC credentials** when the node file already has them, and otherwise generates a new pair and raises the task on Bitcoin.
+- **Preserves authentication and Specter's other settings** in `config.json`, merging only the node fields.
 - **Runnable at any status**, including before the first start — which is how the install-time task is completed.
+
+### Create Admin Password / Reset Admin Password
+
+Generates a 22-character admin password and shows it once, masked and copyable, with the admin account's username. Named **Create** until it has run, **Reset** afterwards.
+
+- **What it changes:** the admin entry's password hash in `users.json`, and `auth.method` to `passwordonly` unless it is `usernamepassword` (where the admin signs in with that username and the same password).
+- **Cost:** restarts Specter if it is running, since Specter holds its accounts in memory and would write the old hash back.
+- **Data loss on reset:** Specter encrypts some extension data (the Swan integration's credentials) with a secret tied to the old password. A reset cannot decrypt it, so the action discards that secret and empties `.specter/<username>_services.json`, as Specter itself does when its password is removed. Wallets, devices and node settings are unaffected.
+- **Runnable at any status.**
 
 ## Tasks
 
-One, and it is reactive.
+Two, both reactive.
 
-| Task        | Severity   | Raised when                        | Cleared when    |
-| ----------- | ---------- | ---------------------------------- | --------------- |
-| Select Node | `critical` | Any init that finds no backend set | The action runs |
+| Task                  | Severity    | Raised when                                         | Cleared when    |
+| --------------------- | ----------- | --------------------------------------------------- | --------------- |
+| Select Node           | `critical`  | Any init that finds no backend set                  | The action runs |
+| Create Admin Password | `important` | Any init while the password has not been handed out | The action runs |
 
 `critical` blocks the service from starting and suspends the ordinary controls, so a fresh install shows the task and nothing else.
 
@@ -174,7 +191,7 @@ A restored instance comes back with the same wallets and the same backend select
 
 1. **A backend must be selected before the service will start.**
 2. **Only one backend at a time**, and switching restarts and re-depends.
-3. **Specter's own authentication is off until you configure it** inside the application.
+3. **Password sign-in is on by default**, where upstream ships with no authentication; nobody can sign in until **Create Admin Password** runs.
 4. **The backend must be synced**, not merely running, before Specter starts.
 5. **Two of Specter's own migrations are suppressed** by a pre-seeded migration file; without that, the Electrum node definition is destroyed on first start.
 6. **The node files are partly pinned** — class, path, name and alias are repaired on read, so they cannot be repurposed by hand.
@@ -195,7 +212,9 @@ subcontainers:
 volumes:
   main: /data # Specter's data folder is /data/.specter
 file_models:
-  - .specter/config.json # active_node_alias, spectrum_backend
+  - store.json # adminPasswordSet
+  - .specter/config.json # active_node_alias, spectrum_backend, auth.method
+  - .specter/users.json # admin password hash (Specter's PBKDF2 format)
   - .specter/nodes/bitcoin_core.json # host/port written at start; class/alias pinned
   - .specter/nodes/spectrum_node.json # same, for the Electrum backend
   - .specter/migration_data.json # pre-seeded to suppress Specter's migrations 1 and 2
@@ -205,11 +224,13 @@ dependencies:
   - electrs # only when selected; healthChecks: [electrs, sync]
   - fulcrum # only when selected; healthChecks: [primary, sync-progress]
 interfaces:
-  ui: { type: ui, port: 25441 } # Specter's own auth, off by default until configured
+  ui: { type: ui, port: 25441 } # Specter's own auth, password-only by default
 actions:
   - select-node
+  - reset-password # Create / Reset Admin Password; restarts Specter
 tasks:
   - { action: select-node, severity: critical } # reactive
+  - { action: reset-password, severity: important } # until the password is handed out
   # selecting Bitcoin Core also raises a critical task on the bitcoind package
 health_checks:
   - primary # displayed "Web Interface"; says nothing about the backend
