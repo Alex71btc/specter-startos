@@ -22,8 +22,4 @@ platform manifest digest.
 - Update `images.specter.source.dockerBuild.buildArgs.IMAGE`
   in `startos/manifest/index.ts` using the verified tag and digest:
   `ghcr.io/cryptoadvance/specter-desktop:<tagName>@sha256:<digest>`.
-- Update `startos/versions/current.ts` with the package version
-  and localized release notes.
-- Preserve existing migrations and review upstream migration requirements.
 - Preserve the CA-store and certifi refresh in the root Dockerfile.
-- Build both architectures and test installation and upgrades on StartOS.
