@@ -1,17 +1,29 @@
 # Updating the upstream version
 
-Specter Desktop has one upstream source: the `ghcr.io/cryptoadvance/specter-desktop` Docker image, whose tags follow the GitHub release version. Bumping the package is a single field change.
+Specter Desktop uses the official upstream Docker image
+`ghcr.io/cryptoadvance/specter-desktop`.
 
 ## Determining the upstream version
 
-- **Specter Desktop** ([`cryptoadvance/specter-desktop`](https://github.com/cryptoadvance/specter-desktop)) — latest GitHub release:
+Find the latest upstream release:
 
-  ```sh
-  gh release view -R cryptoadvance/specter-desktop --json tagName -q .tagName
-  ```
+    gh release view -R cryptoadvance/specter-desktop --json tagName -q .tagName
 
-  The matching container tag is published to GHCR as `ghcr.io/cryptoadvance/specter-desktop:<tagName>` (the GitHub tags themselves already carry a `v` prefix, e.g. `v2.1.8`). The pin lives in `images.specter.source.dockerBuild.buildArgs.IMAGE` in `startos/manifest/index.ts`; the root `Dockerfile` layers a CA-store and certifi refresh on top of it.
+Inspect the matching container image:
+
+    docker buildx imagetools inspect ghcr.io/cryptoadvance/specter-desktop:<tagName>
+
+Verify that both linux/amd64 and linux/arm64 are available.
+Use the multi-architecture index digest, not an individual
+platform manifest digest.
 
 ## Applying the bump
 
-- **`startos/manifest/index.ts`** — set `images.specter.source.dockerBuild.buildArgs.IMAGE` to `ghcr.io/cryptoadvance/specter-desktop:<tagName>` using the tag from the command above.
+- Update `images.specter.source.dockerBuild.buildArgs.IMAGE`
+  in `startos/manifest/index.ts` using the verified tag and digest:
+  `ghcr.io/cryptoadvance/specter-desktop:<tagName>@sha256:<digest>`.
+- Update `startos/versions/current.ts` with the package version
+  and localized release notes.
+- Preserve existing migrations and review upstream migration requirements.
+- Preserve the CA-store and certifi refresh in the root Dockerfile.
+- Build both architectures and test installation and upgrades on StartOS.

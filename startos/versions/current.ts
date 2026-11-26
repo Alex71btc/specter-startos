@@ -1,18 +1,18 @@
 import { VersionInfo, IMPOSSIBLE } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '2.1.11:3',
+  version: '2.3.0:0',
   releaseNotes: {
     en_US:
-      'Specter now asks for a password before anyone can use it. If yours was open without a sign-in, run the "Create Admin Password" action after updating to get your password; until then the web interface stays locked. A password you already set in Specter is unchanged. The new "Reset Admin Password" action replaces a forgotten one.',
+      'Update Specter Desktop to v2.3.0. Includes authentication fixes, improved hardware wallet support, BIP329 label import and export, and updated dependencies. Create a full backup before upgrading.',
     es_ES:
-      'Specter ahora pide una contraseña antes de que nadie pueda usarlo. Si el tuyo estaba abierto sin inicio de sesión, ejecuta la acción "Crear contraseña de administrador" después de actualizar para obtener tu contraseña; hasta entonces la interfaz web permanece bloqueada. Una contraseña que ya hayas configurado en Specter no cambia. La nueva acción "Restablecer contraseña de administrador" reemplaza una olvidada.',
+      'Actualización de Specter Desktop a v2.3.0. Incluye correcciones de autenticación, mejoras en la compatibilidad con monederos físicos, importación y exportación de etiquetas BIP329 y dependencias actualizadas. Crea una copia de seguridad completa antes de actualizar.',
     de_DE:
-      'Specter verlangt jetzt ein Passwort, bevor jemand es nutzen kann. War deins ohne Anmeldung offen, führe nach dem Update die Aktion "Admin-Passwort erstellen" aus, um dein Passwort zu erhalten; bis dahin bleibt die Weboberfläche gesperrt. Ein Passwort, das du in Specter bereits festgelegt hast, bleibt unverändert. Die neue Aktion "Admin-Passwort zurücksetzen" ersetzt ein vergessenes.',
+      'Update von Specter Desktop auf v2.3.0. Enthält Fehlerbehebungen bei der Authentifizierung, verbesserte Hardware-Wallet-Unterstützung, Import und Export von BIP329-Labels sowie aktualisierte Abhängigkeiten. Erstelle vor dem Update eine vollständige Sicherung.',
     pl_PL:
-      'Specter wymaga teraz hasła, zanim ktokolwiek będzie mógł z niego korzystać. Jeśli twój był otwarty bez logowania, po aktualizacji uruchom akcję "Utwórz hasło administratora", aby otrzymać hasło; do tego czasu interfejs webowy pozostaje zablokowany. Hasło ustawione już w Specter pozostaje bez zmian. Nowa akcja "Zresetuj hasło administratora" zastępuje zapomniane hasło.',
+      'Aktualizacja Specter Desktop do v2.3.0. Zawiera poprawki uwierzytelniania, ulepszoną obsługę portfeli sprzętowych, import i eksport etykiet BIP329 oraz zaktualizowane zależności. Przed aktualizacją wykonaj pełną kopię zapasową.',
     fr_FR:
-      "Specter demande désormais un mot de passe avant que quiconque puisse l'utiliser. Si le vôtre était ouvert sans connexion, exécutez l'action « Créer le mot de passe administrateur » après la mise à jour pour obtenir votre mot de passe ; d'ici là, l'interface web reste verrouillée. Un mot de passe déjà défini dans Specter reste inchangé. La nouvelle action « Réinitialiser le mot de passe administrateur » remplace un mot de passe oublié.",
+      'Mise à jour de Specter Desktop vers la version 2.3.0. Inclut des corrections d’authentification, une meilleure prise en charge des portefeuilles matériels, l’importation et l’exportation des étiquettes BIP329 et des dépendances mises à jour. Effectuez une sauvegarde complète avant la mise à jour.',
   },
   migrations: {
     up: async () => {},
